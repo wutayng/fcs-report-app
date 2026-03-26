@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Launch FCS Dates</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow-x: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f6f7fb;
+      color: #323338;
+    }
+
+    /* ââ Token Modal ââ */
+    #token-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    #token-modal.open { display: flex; }
+    .modal-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px;
+      width: 460px;
+      max-width: calc(100vw - 48px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+    .modal-box h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .modal-box p  { color: #676879; font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+    .modal-box a  { color: #0073ea; }
+    #token-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #c5c7d4;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      outline: none;
+      font-family: monospace;
+      letter-spacing: 0.03em;
+    }
+    #token-input:focus { border-color: #0073ea; box-shadow: 0 0 0 3px rgba(0,115,234,0.15); }
+    #connect-btn {
+      width: 100%;
+      padding: 10px;
+      background: #0073ea;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #connect-btn:hover { background: #0060c0; }
+
+    /* ââ Header ââ */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e6e9ef;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    #last-updated    { font-size: 12px; color: #676879; }
+    #next-refresh    { font-size: 11px; color: #c5c7d4; }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+    }
+    .btn-ghost   { background: transparent; border: 1px solid #c5c7d4; color: #676879; }
+    .btn-ghost:hover { background: #f6f7fb; }
+    .btn-primary { background: #0073ea; color: #fff; }
+    .btn-primary:hover { background: #0060c0; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ââ Main ââ */
+    .main { padding: 24px; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px 24px 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    /* ââ Chart ââ */
+    .chart-header {
+      display: flex;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e6e9ef;
+      margin-bottom: 2px;
+    }
+    .label-spacer { flex-shrink: 0; }
+    .months-bar   { position: relative; flex: 1; height: 22px; }
+
+    .month-tick {
+      position: absolute;
+      font-size: 11px;
+      font-weight: 600;
+      color: #676879;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      user-select: none;
+      bottom: 0;
+    }
+    .today-tick {
+      position: absolute;
+      bottom: 0;
+      font-size: 10px;
+      font-weight: 700;
+      color: #e2445c;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    /* Item rows */
+    .item-row {
+      display: flex;
+      align-items: center;
+      height: 48px;
+    }
+    .item-label {
+      flex-shrink: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: #323338;
+      padding-right: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-track {
+      flex: 1;
+      position: relative;
+      height: 100%;
+    }
+    .track-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e6e9ef;
+    }
+    .grid-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: #f3f4f8;
+    }
+    .today-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e2445c;
+      z-index: 3;
+    }
+
+    /* Dot + badge */
+    .dot-wrapper {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      cursor: default;
+    }
+    .dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 2.5px solid #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .dot-wrapper:hover .dot {
+      transform: scale(1.5);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+    }
+    .conf-badge {
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 4px;
+      border-radius: 3px;
+      color: #fff;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* ââ Tooltip ââ */
+    #tooltip {
+      position: fixed;
+      background: #323338;
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.1s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      min-width: 190px;
+    }
+    #tooltip.show { opacity: 1; }
+    .tt-name   { font-weight: 600; margin-bottom: 3px; }
+    .tt-date   { color: #c5c7d4; font-size: 11px; margin-bottom: 6px; }
+    .tt-conf   { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .tt-swatch { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ââ Legend ââ */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #f0f1f5;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #676879;
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ââ States ââ */
+    .state-msg { padding: 48px; text-align: center; color: #676879; font-size: 14px; }
+    .state-error {
+      color: #d83a52;
+      background: #fff0f2;
+      border: 1px solid #f3b8c0;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+    }
+    .state-error a { color: #d83a52; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- Token Modal -->
+<div id="token-modal">
+  <div class="modal-box">
+    <h2>Connect to monday.com</h2>
+    <p>Enter your monday.com API token to load live data.<br>
+      Find it at <strong>brod-and-taylor.monday.com</strong> â Profile â Developers â API v2 Token.</p>
+    <input type="password" id="token-input" placeholder="Paste your API token hereâ¦" autocomplete="off" />
+    <button id="connect-btn" onclick="saveToken()">Connect</button>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <h1>Product Launch FCS Dates</h1>
+  <div class="header-actions">
+    <span id="last-updated"></span>
+    <span id="next-refresh"></span>
+    <button class="btn btn-ghost" onclick="clearToken()" style="display:none">â API Token</button>
+    <button class="btn btn-primary" id="refresh-btn" onclick="loadData(true)">â» Refresh</button>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="main">
+  <div class="card">
+    <div id="chart-area">
+      <div class="state-msg">Loadingâ¦</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="tooltip">
+  <div class="tt-name"  id="tt-name"></div>
+  <div class="tt-date"  id="tt-date"></div>
+  <div class="tt-conf">
+    <div class="tt-swatch" id="tt-swatch"></div>
+    <span id="tt-conf-text"></span>
+  </div>
+</div>
+
+<script>
+// ââ Config ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+const BOARD_ID  = 18364310005;
+const GROUP_ID  = 'topics';
+const FCS_COL   = 'date_mm06txhj';
+const CONF_COL  = 'numeric_mkz3rvnr';
+const AUTO_REFRESH_MS = 5 * 60 * 1000;   // 5 minutes
+const MONTHS    = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ââ Confidence colours ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function confColor(pct) {
+  if (pct >= 90) return '#00c875';
+  if (pct >= 75) return '#579bfc';
+  if (pct >= 60) return '#fdab3d';
+  return '#c4c4c4';
+}
+
+// ââ Saved token (paste your monday.com API token between the quotes below) ââââ
+const SAVED_TOKEN = '';
+
+// ââ Token management ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function getToken()  { return SAVED_TOKEN || localStorage.getItem('monday_token'); }
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t) return;
+  localStorage.setItem('monday_token', t);
+  document.getElementById('token-modal').classList.remove('open');
+  loadData(true);
+}
+function clearToken() {
+  localStorage.removeItem('monday_token');
+  document.getElementById('token-input').value = '';
+  document.getElementById('token-modal').classList.add('open');
+}
+
+// ââ API âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+async function fetchItems(token) {
+  const query = `{
+    boards(ids: [${BOARD_ID}]) {
+      groups(ids: ["${GROUP_ID}"]) {
+        items_page(limit: 100) {
+          items {
+            id name
+            column_values(ids: ["${FCS_COL}", "${CONF_COL}"]) { id text }
+          }
+        }
+      }
+    }
+  }`;
+
+  const res = await fetch('https://api.monday.com/v2', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token,
+      'API-Version': '2024-01'
+    },
+    body: JSON.stringify({ query })
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status} â check your API token`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
+
+  return json.data.boards[0].groups[0].items_page.items
+    .map(item => {
+      const fcsText  = item.column_values.find(c => c.id === FCS_COL)?.text  || '';
+      const confText = item.column_values.find(c => c.id === CONF_COL)?.text || '';
+      return {
+        id:         item.id,
+        name:       item.name,
+        fcsDate:    fcsText  || null,
+        confidence: confText ? parseFloat(confText) : null
+      };
+    })
+    .filter(i => i.fcsDate)
+    .sort((a, b) => new Date(a.fcsDate) - new Date(b.fcsDate));
+}
+
+// ââ Date helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function parseDate(s) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+function prettyDate(s) {
+  return parseDate(s).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+function monthStart(d, offset = 0) {
+  return new Date(d.getFullYear(), d.getMonth() + offset, 1);
+}
+
+// ââ Render ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function renderChart(items) {
+  const area = document.getElementById('chart-area');
+
+  if (!items.length) {
+    area.innerHTML = '<div class="state-msg">No items with FCS dates found in the Active Developments group.</div>';
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const allDates   = items.map(i => parseDate(i.fcsDate));
+  const minDate    = new Date(Math.min(...allDates));
+  const maxDate    = new Date(Math.max(...allDates));
+
+  let rangeStart = monthStart(minDate, -1);
+  let rangeEnd   = monthStart(maxDate,  2);
+  if (today < rangeStart) rangeStart = monthStart(today, -1);
+  if (today > rangeEnd)   rangeEnd   = monthStart(today,  2);
+
+  const totalMs = rangeEnd - rangeStart;
+  const pct = d => ((d - rangeStart) / totalMs) * 100;
+
+  // Month list
+  const monthList = [];
+  let cur = new Date(rangeStart);
+  while (cur < rangeEnd) {
+    monthList.push(new Date(cur));
+    cur = monthStart(cur, 1);
+  }
+
+  // Label column width
+  const cvs = document.createElement('canvas');
+  const ctx = cvs.getContext('2d');
+  ctx.font = '500 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const labelW = Math.min(220, Math.max(120,
+    Math.max(...items.map(i => ctx.measureText(i.name).width)) + 20
+  ));
+
+  const todayPct  = pct(today);
+  const showToday = todayPct >= 0 && todayPct <= 100;
+
+  // Month ticks HTML
+  const monthTicksHtml = monthList.map(m => {
+    const p     = pct(m);
+    const label = (m.getMonth() === 0 || m === monthList[0])
+      ? `${MONTHS[m.getMonth()]} ${m.getFullYear()}`
+      : MONTHS[m.getMonth()];
+    return `<div class="month-tick" style="left:${p}%">${label}</div>`;
+  }).join('');
+
+  const todayTickHtml = showToday
+    ? `<div class="today-tick" style="left:${todayPct}%">Today</div>`
+    : '';
+
+  // Grid lines per row
+  const gridHtml = monthList.map(m =>
+    `<div class="grid-line" style="left:${pct(m)}%"></div>`
+  ).join('');
+
+  const todayLineHtml = showToday
+    ? `<div class="today-line" style="left:${todayPct}%"></div>`
+    : '';
+
+  // Item rows
+  const rowsHtml = items.map(item => {
+    const dp     = pct(parseDate(item.fcsDate));
+    const color  = confColor(item.confidence ?? 0);
+    const badge  = item.confidence != null ? item.confidence + '%' : 'â';
+
+    return `
+      <div class="item-row">
+        <div class="item-label" style="width:${labelW}px" title="${esc(item.name)}">${esc(item.name)}</div>
+        <div class="item-track">
+          <div class="track-line"></div>
+          ${gridHtml}
+          ${todayLineHtml}
+          <div class="dot-wrapper"
+            style="left:${dp}%"
+            data-name="${esc(item.name)}"
+            data-date="${esc(prettyDate(item.fcsDate))}"
+            data-conf="${esc(badge)}"
+            data-color="${color}"
+            onmouseenter="showTip(event,this)"
+            onmouseleave="hideTip()"
+            onmousemove="moveTip(event)">
+            <div class="conf-badge" style="background:${color}">${badge}</div>
+            <div class="dot" style="background:${color}"></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Legend
+  const legendHtml = `
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00c875"></div>90â100%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#579bfc"></div>75â89%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fdab3d"></div>60â74%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#c4c4c4"></div>&lt;60%</div>
+      ${showToday ? '<div class="legend-item"><div style="width:14px;height:2px;background:#e2445c;border-radius:1px"></div>Today</div>' : ''}
+    </div>`;
+
+  area.innerHTML = `
+    <div class="chart">
+      <div class="chart-header">
+        <div class="label-spacer" style="width:${labelW}px"></div>
+        <div class="months-bar">${monthTicksHtml}${todayTickHtml}</div>
+      </div>
+      <div class="item-rows">${rowsHtml}</div>
+      ${legendHtml}
+    </div>`;
+}
+
+// ââ Tooltip âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function showTip(e, el) {
+  document.getElementById('tt-name').textContent      = el.dataset.name;
+  document.getElementById('tt-date').textContent      = el.dataset.date;
+  document.getElementById('tt-conf-text').textContent = 'Confidence: ' + el.dataset.conf;
+  document.getElementById('tt-swatch').style.background = el.dataset.color;
+  document.getElementById('tooltip').classList.add('show');
+  moveTip(e);
+}
+function moveTip(e) {
+  const tt = document.getElementById('tooltip');
+  tt.style.left = Math.min(e.clientX + 16, window.innerWidth - 220) + 'px';
+  tt.style.top  = Math.max(e.clientY - 10, 8) + 'px';
+}
+function hideTip() {
+  document.getElementById('tooltip').classList.remove('show');
+}
+
+// ââ Load data + auto-refresh ââââââââââââââââââââââââââââââââââââââââââââââââââ
+let refreshTimer    = null;
+let countdownTimer  = null;
+let nextRefreshAt   = null;
+
+async function loadData(manual = false) {
+  const token = getToken();
+  if (!token) { document.getElementById('token-modal').classList.add('open'); return; }
+
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled    = true;
+  btn.textContent = 'â» Loadingâ¦';
+
+  clearTimeout(refreshTimer);
+  clearInterval(countdownTimer);
+  document.getElementById('next-refresh').textContent = '';
+
+  try {
+    const items = await fetchItems(token);
+    renderChart(items);
+
+    const now = new Date();
+    document.getElementById('last-updated').textContent =
+      'Updated ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Schedule next auto-refresh
+    nextRefreshAt = Date.now() + AUTO_REFRESH_MS;
+    refreshTimer  = setTimeout(() => loadData(), AUTO_REFRESH_MS);
+
+    countdownTimer = setInterval(() => {
+      const secs = Math.max(0, Math.round((nextRefreshAt - Date.now()) / 1000));
+      const m    = Math.floor(secs / 60);
+      const s    = secs % 60;
+      document.getElementById('next-refresh').textContent =
+        `Next refresh ${m}:${String(s).padStart(2, '0')}`;
+      if (secs === 0) clearInterval(countdownTimer);
+    }, 1000);
+
+  } catch (err) {
+    document.getElementById('chart-area').innerHTML = `
+      <div class="state-error">
+        Failed to load data: ${esc(err.message)}.
+        <a href="#" onclick="clearToken();return false">Re-enter API token</a>.
+      </div>`;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'â» Refresh';
+  }
+}
+
+// ââ Utils âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ââ Init ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+document.getElementById('token-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveToken();
+});
+
+if (getToken()) {
+  loadData();
+} else {
+  document.getElementById('token-modal').classList.add('open');
+  document.getElementById('chart-area').innerHTML =
+    '<div class="state-msg">Enter your monday.com API token to get started.</div>';
+}
+</script>
+</body>
+</html>
