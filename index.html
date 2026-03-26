@@ -14,6 +14,55 @@
     }
 
     /* ââ Token Modal ââ */
+    /* ── Password Gate ── */
+    #password-gate {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #f6f7fb;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    #password-gate.show { display: flex; }
+    .pw-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 40px 36px 36px;
+      width: 400px;
+      max-width: calc(100vw - 48px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+      text-align: center;
+    }
+    .pw-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .pw-box p  { color: #676879; font-size: 13px; margin-bottom: 24px; }
+    #pw-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #c5c7d4;
+      border-radius: 6px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      outline: none;
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+    #pw-input:focus { border-color: #0073ea; box-shadow: 0 0 0 3px rgba(0,115,234,0.15); }
+    #pw-input.error { border-color: #e2445c; box-shadow: 0 0 0 3px rgba(226,68,92,0.15); }
+    #pw-error { color: #e2445c; font-size: 12px; min-height: 18px; margin-bottom: 10px; }
+    #pw-submit {
+      width: 100%;
+      padding: 10px;
+      background: #0073ea;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #pw-submit:hover { background: #0060c0; }
+
     #token-modal {
       display: none;
       position: fixed;
@@ -268,6 +317,18 @@
 </head>
 <body>
 
+<!-- Password Gate -->
+<div id="password-gate" class="show">
+  <div class="pw-box">
+    <h2>Product Launch FCS Dates</h2>
+    <p>Enter the password to view this page.</p>
+    <input type="password" id="pw-input" placeholder="Password" autocomplete="off"
+           onkeydown="if(event.key==='Enter')checkPassword()" />
+    <div id="pw-error"></div>
+    <button id="pw-submit" onclick="checkPassword()">View Chart</button>
+  </div>
+</div>
+
 <!-- Token Modal -->
 <div id="token-modal">
   <div class="modal-box">
@@ -286,7 +347,7 @@
     <span id="last-updated"></span>
     <span id="next-refresh"></span>
     <button class="btn btn-ghost" onclick="clearToken()" style="display:none">â API Token</button>
-    <button class="btn btn-primary" id="refresh-btn" onclick="loadData(true)">â» Refresh</button>
+    <button class="btn btn-primary" id="refresh-btn" onclick="loadData(true)">Refresh</button>
   </div>
 </div>
 
@@ -579,7 +640,7 @@ async function loadData(manual = false) {
       </div>`;
   } finally {
     btn.disabled    = false;
-    btn.textContent = 'â» Refresh';
+    btn.textContent = 'Refresh';
   }
 }
 
@@ -604,6 +665,27 @@ if (getToken()) {
   document.getElementById('chart-area').innerHTML =
     '<div class="state-msg">Enter your monday.com API token to get started.</div>';
 }
+
+// ── Password gate ────────────────────────────────────────────────────────
+const PAGE_PASSWORD = 'btfcs';
+function checkPassword() {
+  const input = document.getElementById('pw-input');
+  const errEl = document.getElementById('pw-error');
+  if (input.value === PAGE_PASSWORD) {
+    sessionStorage.setItem('page_unlocked', '1');
+    document.getElementById('password-gate').classList.remove('show');
+    input.classList.remove('error');
+    errEl.textContent = '';
+  } else {
+    input.classList.add('error');
+    errEl.textContent = 'Incorrect password. Please try again.';
+    input.select();
+  }
+}
+if (sessionStorage.getItem('page_unlocked') === '1') {
+  document.getElementById('password-gate').classList.remove('show');
+}
+
 </script>
 </body>
 </html>
