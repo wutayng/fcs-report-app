@@ -334,8 +334,8 @@
   <div class="modal-box">
     <h2>Connect to monday.com</h2>
     <p>Enter your monday.com API token to load live data.<br>
-      Find it at <strong>brod-and-taylor.monday.com</strong> â Profile â Developers â API v2 Token.</p>
-    <input type="password" id="token-input" placeholder="Paste your API token hereâ¦" autocomplete="off" />
+      Find it at <strong>brod-and-taylor.monday.com</strong> > Profile > Developers > API v2 Token.</p>
+    <input type="password" id="token-input" placeholder="Paste your API token here..." autocomplete="off" />
     <button id="connect-btn" onclick="saveToken()">Connect</button>
   </div>
 </div>
@@ -355,7 +355,7 @@
 <div class="main">
   <div class="card">
     <div id="chart-area">
-      <div class="state-msg">Loadingâ¦</div>
+      <div class="state-msg">Loading...</div>
     </div>
   </div>
 </div>
@@ -430,7 +430,7 @@ async function fetchItems(token) {
     body: JSON.stringify({ query })
   });
 
-  if (!res.ok) throw new Error(`HTTP ${res.status} â check your API token`);
+  if (!res.ok) throw new Error(`HTTP ${res.status} - check your API token`);
   const json = await res.json();
   if (json.errors) throw new Error(json.errors.map(e => e.message).join('; '));
 
@@ -530,7 +530,7 @@ function renderChart(items) {
   const rowsHtml = items.map(item => {
     const dp     = pct(parseDate(item.fcsDate));
     const color  = confColor(item.confidence ?? 0);
-    const badge  = item.confidence != null ? item.confidence + '%' : 'â';
+    const badge  = item.confidence != null ? item.confidence + '%' : '-';
 
     return `
       <div class="item-row">
@@ -558,9 +558,9 @@ function renderChart(items) {
   // Legend
   const legendHtml = `
     <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#00c875"></div>90â100%</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#579bfc"></div>75â89%</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#fdab3d"></div>60â74%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00c875"></div>90-100%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#579bfc"></div>75-89%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#fdab3d"></div>60-74%</div>
       <div class="legend-item"><div class="legend-dot" style="background:#c4c4c4"></div>&lt;60%</div>
       ${showToday ? '<div class="legend-item"><div style="width:14px;height:2px;background:#e2445c;border-radius:1px"></div>Today</div>' : ''}
     </div>`;
@@ -605,7 +605,7 @@ async function loadData(manual = false) {
 
   const btn = document.getElementById('refresh-btn');
   btn.disabled    = true;
-  btn.textContent = 'â» Loadingâ¦';
+  btn.textContent = 'Loading...';
 
   clearTimeout(refreshTimer);
   clearInterval(countdownTimer);
